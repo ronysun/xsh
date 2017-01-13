@@ -1,27 +1,48 @@
 #coding:utf-8
 
 import sys
+import os
 import paramiko
-import pickle
+import csv
+import interactive
+
+listFile = 'hostListFile'
 
 
-def hostList():
+def addHostToList():
+    hostName = raw_input("input the hostname:")
+    hostIp = raw_input("host ip:")
+    hostLoginUser = raw_input("login user:")
+    hostLoginPWD = raw_input("login password:")
+    fieldnames = ['name',  'ip', 'loginUser', 'loginPWD']
+    if os.path.exists(listFile):
+        File = file(listFile,'a')
+        hostListFile = csv.DictWriter(File, fieldnames=fieldnames)
+        hostListFile.writerow({'name':hostName,'ip':hostIp, 'loginUser':hostLoginUser, 'loginPWD':hostLoginPWD })
+    
+    else :
+        File = file(listFile,'w')
+        hostListFile = csv.DictWriter(File, fieldnames=fieldnames)
+        hostListFile.writeheader()
+        hostListFile.writerow({'name':hostName,'ip':hostIp, 'loginUser':hostLoginUser, 'loginPWD':hostLoginPWD })
+        File.close
+    return 
+
+def deletHost():
     pass
 
-def saveList():
-    hostDict = {}
-    hostDict['name'] = raw_input("please input the hostname:")
-    hostDict['ip'] = raw_input("host ip:")
-    hostDict['loginUser'] = raw_input("login user:")
-    hostDict['loginPWD'] = raw_input("login password:")
-    hostListFile = open('hostListFile', 'a')
-    pickle.dump(hostDict, hostListFile)
-    hostListFile.close
-    return
+def connectHost(hostInfo):
+    print host
+    ssh = paramiko.client.SSHClient()
+    ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+    ssh.connect(hostInfo['ip'], username=hostInfo['loginUser'], password=hostInfo['loginPWD'])
+    channel = ssh.invoke_shell()
+    interactive.interactive_shell(channel)
+    channel.close
+    ssh.close  
+    return 
 
-def connectHost(hostDict):
-    ssh = paramiko.SSHClient()
-    ssh.connect(hostDict['ip'], 22, hostDict['loginUser'], hostDict['loginPWD'])
+
 
 if __name__ == '__main__':
     if len(sys.argv) == 1:
@@ -29,15 +50,29 @@ if __name__ == '__main__':
     else:
         parame = sys.argv[1]
         if parame == "list":
-            hostList_file = open('hostListFile', 'rd')
-            for host in pickle.Unpickler.load_dict(hostList_file):
-                print host
+            hostListFile = open(listFile, 'rd')
+            for host in csv.DictReader(hostListFile):
+                print (host['name']+",ip address:"+host['ip'])
+            hostListFile.close
 
-        elif parame == "save":
-            saveList()
+        elif parame == "add":
+            addHostToList()
+
+        elif parame == "del":
+            deletHost()
 
         else:
-            pass
+            hostListFile = open(listFile, 'rd')
+            for host in csv.DictReader(hostListFile):
+                if parame == host['name'] :
+                   connectHost(host)
+
+                else:
+                    print "there is no this host!\r"
+                    print "host list:\r"
+                    print (host['name']+",ip address:"+host['ip'])
+
+
             # connectHost(parame)
 
 
